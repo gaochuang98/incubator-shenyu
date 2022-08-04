@@ -18,6 +18,7 @@
 package org.apache.shenyu.web.filter;
 
 import org.apache.shenyu.common.config.ShenyuConfig.CrossFilterConfig;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -27,6 +28,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -93,10 +95,27 @@ public final class CrossFilterTest {
                 add("a");
             }
         });
+        allowedOriginConfig.setOrigins(new HashSet<String>() {
+            {
+                add("b.apache.org");
+                add("c.apache.org");
+                add("http://d.apache.org");
+                add("*");
+            }
+        });
         filterConfig.setAllowedOrigin(allowedOriginConfig);
         CrossFilter filter = new CrossFilter(filterConfig);
         StepVerifier.create(filter.filter(exchange, chainNormal))
                 .expectSubscription()
                 .verifyComplete();
+    }
+
+    @Test
+    public void testOriginRegex() {
+        final String regex = "^http(|s)://(.*\\.|)abc.com$";
+        Assertions.assertTrue(Pattern.matches(regex, "http://console.ada.abc.com"));
+        Assertions.assertTrue(Pattern.matches(regex, "http://console.abc.com"));
+        Assertions.assertTrue(Pattern.matches(regex, "http://abc.com"));
+        Assertions.assertFalse(Pattern.matches(regex, "http://aabc.com"));
     }
 }
