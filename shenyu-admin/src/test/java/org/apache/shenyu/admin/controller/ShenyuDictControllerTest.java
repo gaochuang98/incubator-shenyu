@@ -79,7 +79,7 @@ public final class ShenyuDictControllerTest {
     @BeforeEach
     public void setUp() {
         this.mockMvc = MockMvcBuilders.standaloneSetup(shenyuDictController)
-                .setControllerAdvice(new ExceptionHandlers())
+                .setControllerAdvice(new ExceptionHandlers(null))
                 .build();
     }
 
@@ -195,6 +195,7 @@ public final class ShenyuDictControllerTest {
         shenyuDictDTO.setDictValue("v");
         shenyuDictDTO.setDictCode("code");
         shenyuDictDTO.setSort(1);
+        shenyuDictDTO.setEnabled(true);
         return shenyuDictDTO;
     }
 }

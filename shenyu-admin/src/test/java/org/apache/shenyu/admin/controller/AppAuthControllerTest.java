@@ -17,6 +17,7 @@
 
 package org.apache.shenyu.admin.controller;
 
+import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shenyu.admin.mapper.AppAuthMapper;
 import org.apache.shenyu.admin.mapper.AuthPathMapper;
@@ -26,8 +27,10 @@ import org.apache.shenyu.admin.model.dto.AuthPathDTO;
 import org.apache.shenyu.admin.model.dto.AuthPathWarpDTO;
 import org.apache.shenyu.admin.model.dto.BatchCommonDTO;
 import org.apache.shenyu.admin.model.page.CommonPager;
+import org.apache.shenyu.admin.model.page.PageCondition;
 import org.apache.shenyu.admin.model.page.PageParameter;
 import org.apache.shenyu.admin.model.query.AppAuthQuery;
+import org.apache.shenyu.admin.model.query.RecordLogQueryCondition;
 import org.apache.shenyu.admin.model.result.ShenyuAdminResult;
 import org.apache.shenyu.admin.model.vo.AppAuthVO;
 import org.apache.shenyu.admin.model.vo.AuthPathVO;
@@ -100,13 +103,37 @@ public final class AppAuthControllerTest {
     }
 
     @Test
+    public void testSearch() throws Exception {
+        final String queryUri = "/appAuth/list/search";
+        PageCondition pageCondition = buildPageRecordLogQueryCondition();
+        this.mockMvc.perform(MockMvcRequestBuilders.post(queryUri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(GsonUtils.getInstance().toJson(pageCondition)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", is(ShenyuResultMessage.QUERY_SUCCESS)))
+                .andReturn();
+    }
+
+    @Test
+    public void testSearchAdaptor() throws Exception {
+        final String queryUri = "/appAuth/list/search/adaptor";
+        PageCondition pageCondition = buildPageRecordLogQueryCondition();
+        this.mockMvc.perform(MockMvcRequestBuilders.post(queryUri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(GsonUtils.getInstance().toJson(pageCondition)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", is(ShenyuResultMessage.QUERY_SUCCESS)))
+                .andReturn();
+    }
+
+    @Test
     public void testApply() throws Exception {
         final AuthApplyDTO authApplyDTO = new AuthApplyDTO();
         List<String> pathList = new ArrayList<>();
         pathList.add("/test");
         authApplyDTO.setAppName("testApp");
         authApplyDTO.setUserId("testUser");
-        authApplyDTO.setPhone("18600000000");
+        authApplyDTO.setPhone("+1234567");
         authApplyDTO.setAppParam("{\"type\": \"test\"}");
         authApplyDTO.setExtInfo("{\"extInfo\": \"test\"}");
         authApplyDTO.setOpen(true);
@@ -162,8 +189,8 @@ public final class AppAuthControllerTest {
         this.mockMvc.perform(MockMvcRequestBuilders.get("/appAuth/findPageByQuery")
                 .param("appKey", "testAppKey")
                 .param("phone", "18600000000")
-                .param("currentPage", pageParameter.getCurrentPage() + "")
-                .param("pageSize", pageParameter.getPageSize() + ""))
+                .param("currentPage", String.valueOf(pageParameter.getCurrentPage()))
+                .param("pageSize", String.valueOf(pageParameter.getPageSize())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", is(ShenyuResultMessage.QUERY_SUCCESS)))
                 .andExpect(jsonPath("$.data.dataList[0].appKey", is(appAuthVO.getAppKey())))
@@ -187,7 +214,7 @@ public final class AppAuthControllerTest {
         appAuthDTO.setId("0001");
         appAuthDTO.setAppKey("app key");
         appAuthDTO.setAppSecret("app secret");
-        appAuthDTO.setPhone("18600000001");
+        appAuthDTO.setPhone("1234567");
         given(this.appAuthService.updateDetail(appAuthDTO)).willReturn(
                 ShenyuAdminResult.success(ShenyuResultMessage.UPDATE_SUCCESS));
         ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
@@ -292,5 +319,19 @@ public final class AppAuthControllerTest {
         this.mockMvc.perform(MockMvcRequestBuilders.post("/appAuth/syncData"))
                 .andExpect(status().isOk())
                 .andReturn();
+    }
+
+    private PageCondition<RecordLogQueryCondition> buildPageRecordLogQueryCondition() {
+        PageCondition<RecordLogQueryCondition> pageCondition = new PageCondition<>();
+        pageCondition.setPageSize(10);
+        pageCondition.setPageNum(1);
+        RecordLogQueryCondition recordLogQueryCondition = new RecordLogQueryCondition();
+        recordLogQueryCondition.setUsername("admin");
+        recordLogQueryCondition.setKeyword("testerror");
+        recordLogQueryCondition.setStartTime(new Date());
+        recordLogQueryCondition.setEndTime(new Date());
+        recordLogQueryCondition.setType("");
+        pageCondition.setCondition(recordLogQueryCondition);
+        return pageCondition;
     }
 }

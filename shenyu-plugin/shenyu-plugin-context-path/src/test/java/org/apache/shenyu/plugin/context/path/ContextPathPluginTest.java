@@ -30,6 +30,7 @@ import org.apache.shenyu.plugin.api.result.DefaultShenyuResult;
 import org.apache.shenyu.plugin.api.result.ShenyuResult;
 import org.apache.shenyu.plugin.api.utils.SpringBeanUtils;
 import org.apache.shenyu.plugin.base.utils.CacheKeyUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -40,7 +41,7 @@ import reactor.core.publisher.Mono;
 
 import static org.apache.shenyu.plugin.context.path.handler.ContextPathPluginDataHandler.CACHED_HANDLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,10 +86,20 @@ public final class ContextPathPluginTest {
         shenyuContext.setPath("/http/context/order/findById");
         ContextMappingRuleHandle contextMappingRuleHandle = new ContextMappingRuleHandle();
         contextMappingRuleHandle.setContextPath("/http/context");
+        when(ruleData.getId()).thenReturn("1");
         CACHED_HANDLE.get().cachedHandle(CacheKeyUtils.INST.getKey(ruleData), contextMappingRuleHandle);
         when(ruleData.getHandle()).thenReturn(GsonUtils.getGson().toJson(contextMappingRuleHandle));
         contextPathPlugin.doExecute(exchange, chain, selectorData, ruleData);
         assertEquals("/order/findById", shenyuContext.getRealUrl());
+
+        Assertions.assertDoesNotThrow(() -> contextPathPlugin.doExecute(exchange, chain, selectorData, RuleData.builder().name("RuleData").build()));
+        contextMappingRuleHandle.setAddPrefix("/addPrefix");
+        Assertions.assertDoesNotThrow(() -> contextPathPlugin.doExecute(exchange, chain, selectorData, ruleData));
+        contextMappingRuleHandle.setContextPath("/context");
+        Assertions.assertDoesNotThrow(() -> contextPathPlugin.doExecute(exchange, chain, selectorData, ruleData));
+        shenyuContext.setPath(null);
+        contextMappingRuleHandle.setContextPath(null);
+        Assertions.assertDoesNotThrow(() -> contextPathPlugin.doExecute(exchange, chain, selectorData, ruleData));
     }
 
     /**
@@ -98,7 +109,7 @@ public final class ContextPathPluginTest {
     public void skip() {
         shenyuContext.setRpcType(RpcTypeEnum.DUBBO.getName());
         this.exchange.getAttributes().put(Constants.CONTEXT, shenyuContext);
-        assertTrue(contextPathPlugin.skip(exchange));
+        assertFalse(contextPathPlugin.skip(exchange));
     }
 
     /**

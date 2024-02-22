@@ -17,29 +17,41 @@
 
 package org.apache.shenyu.plugin.logging.kafka.collector;
 
-import org.apache.shenyu.plugin.logging.common.client.LogConsumeClient;
 import org.apache.shenyu.plugin.logging.common.collector.AbstractLogCollector;
 import org.apache.shenyu.plugin.logging.common.collector.LogCollector;
+import org.apache.shenyu.plugin.logging.common.entity.ShenyuRequestLog;
+import org.apache.shenyu.plugin.logging.desensitize.api.matcher.KeyWordMatch;
+import org.apache.shenyu.plugin.logging.kafka.client.KafkaLogCollectClient;
+import org.apache.shenyu.plugin.logging.kafka.config.KafkaLogCollectConfig;
 import org.apache.shenyu.plugin.logging.kafka.handler.LoggingKafkaPluginDataHandler;
 
 /**
  * kafka log collector，depend a LogConsumeClient for consume logs.
  */
-public class KafkaLogCollector extends AbstractLogCollector {
+public class KafkaLogCollector extends AbstractLogCollector<KafkaLogCollectClient, ShenyuRequestLog, KafkaLogCollectConfig.KafkaLogConfig> {
 
-    private static final LogCollector INSTANCE = new KafkaLogCollector();
+    private static final LogCollector<ShenyuRequestLog> INSTANCE = new KafkaLogCollector();
 
     /**
      * get LogCollector instance.
      *
      * @return LogCollector instance
      */
-    public static LogCollector getInstance() {
+    public static LogCollector<ShenyuRequestLog> getInstance() {
         return INSTANCE;
     }
 
     @Override
-    protected LogConsumeClient getLogConsumeClient() {
+    protected KafkaLogCollectClient getLogConsumeClient() {
         return LoggingKafkaPluginDataHandler.getKafkaLogCollectClient();
+    }
+
+    @Override
+    protected KafkaLogCollectConfig.KafkaLogConfig getLogCollectConfig() {
+        return KafkaLogCollectConfig.INSTANCE.getKafkaLogConfig();
+    }
+
+    @Override
+    protected void desensitizeLog(final ShenyuRequestLog log, final KeyWordMatch keyWordMatch, final String desensitizeAlg) {
     }
 }

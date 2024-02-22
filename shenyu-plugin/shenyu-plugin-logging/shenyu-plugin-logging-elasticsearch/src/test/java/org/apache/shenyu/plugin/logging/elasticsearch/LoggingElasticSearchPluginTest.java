@@ -90,7 +90,9 @@ public final class LoggingElasticSearchPluginTest {
     @Test
     public void testDoExecute() {
         Mockito.when(chain.execute(ArgumentMatchers.any())).thenReturn(Mono.empty());
-        Mono<Void> result = loggingElasticSearchPlugin.doLogExecute(exchange, chain, selectorData, ruleData, request, requestLog);
+        Mockito.when(selectorData.getId()).thenReturn("111");
+        Mockito.when(selectorData.getPluginId()).thenReturn("111");
+        Mono<Void> result = loggingElasticSearchPlugin.doExecute(exchange, chain, selectorData, ruleData);
         StepVerifier.create(result).expectSubscription().verifyComplete();
     }
 

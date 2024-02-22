@@ -19,11 +19,40 @@ package org.apache.shenyu.examples.motan.service;
 
 import com.weibo.api.motan.transport.async.MotanAsync;
 
+import java.util.List;
+
 /**
  * Motan class demo interface.
  */
 @MotanAsync
 public interface MotanClassDemoService {
+
+    /**
+     * hello demo for Motan.
+     * @param name  the name to hello
+     * @return  response
+     */
     String hello(String name);
-    String testTimeOut(String timeout);
+
+    /**
+     * timeout for Motan.
+     * @param seconds  seconds to timeout
+     * @return  response
+     */
+    String testTimeOut(long seconds);
+
+    /**
+     * pojo as a parameter for test generalized call.
+     * @param motanTest pojo
+     * @return the motanTest
+     */
+    MotanTest save(MotanTest motanTest);
+
+    /**
+     * List pojo as a parameter for test generalized call.
+     * Unfortunately, motan doesn't support this right now.
+     * @param motanTestList pojo list
+     * @return the motanTest
+     */
+    MotanTest batchSave(List<MotanTest> motanTestList);
 }

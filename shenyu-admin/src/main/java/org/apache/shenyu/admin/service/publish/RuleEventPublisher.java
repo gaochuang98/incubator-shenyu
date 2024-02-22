@@ -24,12 +24,14 @@ import org.apache.shenyu.admin.model.dto.RuleConditionDTO;
 import org.apache.shenyu.admin.model.entity.BaseDO;
 import org.apache.shenyu.admin.model.entity.RuleConditionDO;
 import org.apache.shenyu.admin.model.entity.RuleDO;
+import org.apache.shenyu.admin.model.entity.PluginDO;
 import org.apache.shenyu.admin.model.enums.EventTypeEnum;
 import org.apache.shenyu.admin.model.event.AdminDataModelChangedEvent;
 import org.apache.shenyu.admin.model.event.rule.BatchRuleDeletedEvent;
 import org.apache.shenyu.admin.model.event.rule.RuleChangedEvent;
 import org.apache.shenyu.admin.model.event.rule.RuleCreatedEvent;
 import org.apache.shenyu.admin.model.event.rule.RuleUpdatedEvent;
+import org.apache.shenyu.admin.model.event.selector.BatchSelectorDeletedEvent;
 import org.apache.shenyu.admin.transfer.ConditionTransfer;
 import org.apache.shenyu.admin.utils.SessionUtil;
 import org.apache.shenyu.common.dto.RuleData;
@@ -38,14 +40,15 @@ import org.apache.shenyu.common.enums.DataEventTypeEnum;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
-import static org.apache.shenyu.admin.utils.ListUtil.groupBy;
-import static org.apache.shenyu.admin.utils.ListUtil.map;
+import static org.apache.shenyu.common.utils.ListUtil.groupBy;
+import static org.apache.shenyu.common.utils.ListUtil.map;
 
 /**
  * RuleEventPublisher.
@@ -85,7 +88,7 @@ public class RuleEventPublisher implements AdminDataModelChangedEventPublisher<R
      */
     public void onCreated(final RuleDO rule, final List<RuleConditionDTO> condition) {
         publish(new RuleCreatedEvent(rule, SessionUtil.visitorName()));
-        publishEvent(rule, condition);
+        publishEvent(rule, condition, Collections.emptyList());
     }
     
     /**
@@ -94,12 +97,24 @@ public class RuleEventPublisher implements AdminDataModelChangedEventPublisher<R
      * @param rule      rule
      * @param before    before rule
      * @param condition condition
+     * @param beforeCondition beforeCondition
+     */
+    public void onUpdated(final RuleDO rule, final RuleDO before, final List<RuleConditionDTO> condition, final List<RuleConditionDO> beforeCondition) {
+        publish(new RuleUpdatedEvent(rule, before, SessionUtil.visitorName()));
+        publishEvent(rule, condition, beforeCondition);
+    }
+
+    /**
+     * on rule updated.
+     *
+     * @param rule      rule
+     * @param before    before rule
+     * @param condition condition
      */
     public void onUpdated(final RuleDO rule, final RuleDO before, final List<RuleConditionDTO> condition) {
-        publish(new RuleUpdatedEvent(rule, before, SessionUtil.visitorName()));
-        publishEvent(rule, condition);
+        onUpdated(rule, before, condition, Collections.emptyList());
     }
-    
+
     /**
      * on rule updated.
      *
@@ -131,11 +146,27 @@ public class RuleEventPublisher implements AdminDataModelChangedEventPublisher<R
         publish(new BatchRuleDeletedEvent(rules, SessionUtil.visitorName(), null));
         final List<RuleConditionDO> condition = ruleConditionMapper.selectByRuleIdSet(rules.stream().map(BaseDO::getId).collect(Collectors.toSet()));
         final Map<String, List<RuleConditionDO>> conditionsRuleGroup = groupBy(condition, RuleConditionDO::getRuleId);
-        final List<RuleData> ruleData = map(rules, r -> RuleDO.transFrom(r, ruleMapper.getPluginNameByRuleId(r.getId()),
+        final List<RuleData> ruleData = map(rules, r -> RuleDO.transFrom(r, ruleMapper.getPluginNameBySelectorId(r.getSelectorId()),
                 map(conditionsRuleGroup.get(r.getId()), ConditionTransfer.INSTANCE::mapToRuleDO)));
         publisher.publishEvent(new DataChangedEvent(ConfigGroupEnum.RULE, DataEventTypeEnum.DELETE, ruleData));
     }
-    
+
+    /**
+     * rule delete.
+     *
+     * @param rules data
+     * @param event BatchSelectorDeletedEvent
+     */
+    public void onDeleted(final List<RuleDO> rules, final BatchSelectorDeletedEvent event) {
+        publish(new BatchRuleDeletedEvent(rules, SessionUtil.visitorName(), null));
+        final List<RuleConditionDO> condition = ruleConditionMapper.selectByRuleIdSet(rules.stream().map(BaseDO::getId).collect(Collectors.toSet()));
+        final Map<String, List<RuleConditionDO>> conditionsRuleGroup = groupBy(condition, RuleConditionDO::getRuleId);
+        final List<RuleData> ruleData = map(rules, r -> RuleDO.transFrom(r,
+                Optional.ofNullable(event.findPluginBySelectorId(r.getSelectorId())).map(PluginDO::getName).orElse(null),
+                map(conditionsRuleGroup.get(r.getId()), ConditionTransfer.INSTANCE::mapToRuleDO)));
+        publisher.publishEvent(new DataChangedEvent(ConfigGroupEnum.RULE, DataEventTypeEnum.DELETE, ruleData));
+    }
+
     /**
      * register.
      *
@@ -143,7 +174,7 @@ public class RuleEventPublisher implements AdminDataModelChangedEventPublisher<R
      * @param condition condition
      */
     public void onRegister(final RuleDO rule, final List<RuleConditionDTO> condition) {
-        publishEvent(rule, condition);
+        publishEvent(rule, condition, Collections.emptyList());
     }
     
     /**
@@ -155,12 +186,14 @@ public class RuleEventPublisher implements AdminDataModelChangedEventPublisher<R
     public void publish(final AdminDataModelChangedEvent event) {
         publisher.publishEvent(event);
     }
-    
-    private void publishEvent(final RuleDO ruleDO, final List<RuleConditionDTO> condition) {
+
+    private void publishEvent(final RuleDO ruleDO, final List<RuleConditionDTO> condition, final List<RuleConditionDO> beforeCondition) {
         // publish change event.
         final RuleData rule = RuleDO.transFrom(ruleDO,
-                ruleMapper.getPluginNameByRuleId(ruleDO.getId()),
-                map(condition, ConditionTransfer.INSTANCE::mapToRuleDTO));
+                ruleMapper.getPluginNameBySelectorId(ruleDO.getSelectorId()),
+                map(condition, ConditionTransfer.INSTANCE::mapToRuleDTO),
+                map(beforeCondition, ConditionTransfer.INSTANCE::mapToRuleDO)
+        );
         publisher.publishEvent(new DataChangedEvent(ConfigGroupEnum.RULE, DataEventTypeEnum.UPDATE, Collections.singletonList(rule)));
     }
 }

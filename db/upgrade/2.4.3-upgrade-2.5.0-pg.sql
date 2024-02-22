@@ -45,7 +45,7 @@ INSERT INTO shenyu_dict ("id", "type", "dict_code", "dict_name", "dict_value", "
 INSERT INTO shenyu_dict ("id", "type", "dict_code", "dict_name", "dict_value", "desc", "sort", "enabled") VALUES ('1529402613195784248', 'signRequestBody', 'SIGN_REQUEST_BODY', 'open', 'true', 'open', 0, 1);
 
 -- refactor logging name
-UPDATE plugin SET name = "LoggingConsole" WHERE name = "logging";
+UPDATE plugin SET name = "loggingConsole" WHERE name = "logging";
 
 -- new table operation_record_log
 -- ----------------------------
@@ -82,8 +82,8 @@ INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524918', '11', 'threa
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524919', '11', 'queues', 'queues', 1, 3, 6, '{"required":"0","defaultValue":"0","placeholder":"queues","rule":""}', '2022-05-25 18:08:01', '2022-05-25 18:08:01');
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524920', '11', 'threadpool', 'threadpool', 3, 3, 3, '{"required":"0","defaultValue":"default","placeholder":"threadpool","rule":""}', '2022-05-25 18:08:01', '2022-05-25 18:08:01');
 
-INSERT INTO "public"."resource" VALUES ('1534577121923309568', '', 'Document', '', '/document', '', 0, 3, 'file-text', 0, 0, '', 1, '2022-06-09 00:44:32', '2022-06-09 01:06:45');
-INSERT INTO "public"."resource" VALUES ('1534585430311051264', '1534577121923309568', 'API document', '', '/document/apidoc', '', 1, 0, 'api', 0, 0, '', 1, '2022-06-09 01:17:32', '2022-06-09 01:17:32');
+INSERT INTO "public"."resource" VALUES ('1534577121923309568', '', 'SHENYU.MENU.DOCUMENT', '', '/document', '', 0, 3, 'file-text', 0, 0, '', 1, '2022-06-09 00:44:32', '2022-06-09 01:06:45');
+INSERT INTO "public"."resource" VALUES ('1534585430311051264', '1534577121923309568', 'SHENYU.MENU.DOCUMENT.APIDOC', '', '/document/apidoc', '', 1, 0, 'api', 0, 0, '', 1, '2022-06-09 01:17:32', '2022-06-09 01:17:32');
 INSERT INTO "public"."resource" VALUES ('1534585531108564992', '1534585430311051264', 'send', '', '', '', 2, 0, '', 1, 0, 'document:apirun:send', 1, '2022-06-09 01:17:56', '2022-06-09 01:17:56');
 
 INSERT INTO "public"."permission" VALUES ('1529403932886044767', '1346358560427216896', '1534577121923309568', '2022-06-09 00:44:32', '2022-06-09 00:44:31');
@@ -123,11 +123,11 @@ INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524970', '34', 'maxRe
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524971', '34', 'bufferQueueSize', 'bufferQueueSize', 1, 3, 13, '{"required":"0","defaultValue":50000,"placeholder":""}', '2022-06-30 21:00:00', '2022-06-30 21:00:00');
 
 /* insert plugin for loggingKafka  */
-INSERT INTO "public"."plugin" VALUES ('33', 'loggingKafka', '{"topic":"shenyu-access-logging", "namesrvAddr": "localhost:8082"}', 'Logging', 180, 0, '2022-07-04 22:00:00', '2022-07-04 22:00:00');
+INSERT INTO "public"."plugin" VALUES ('33', 'loggingKafka', '{"topic":"shenyu-access-logging", "namesrvAddr": "localhost:9092"}', 'Logging', 180, 0, '2022-07-04 22:00:00', '2022-07-04 22:00:00');
 
 /*insert plugin_handle data for plugin loggingKafka*/
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524950', '33', 'topic', 'topic', 2, 3, 1, '{"required":"1","defaultValue":"shenyu-access-logging"}', '2022-07-04 22:00:00', '2022-07-04 22:00:00');
-INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524951', '33', 'namesrvAddr', 'namesrvAddr', 2, 3, 2, '{"required":"1","defaultValue":"localhost:8082"}', '2022-07-04 22:00:00', '2022-07-04 22:00:00');
+INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524951', '33', 'namesrvAddr', 'namesrvAddr', 2, 3, 2, '{"required":"1","defaultValue":"localhost:9092"}', '2022-07-04 22:00:00', '2022-07-04 22:00:00');
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524952', '33', 'sampleRate', 'sampleRate', 2, 3, 4, '{"required":"0","defaultValue":"1","placeholder":"optional,0,0.01~1"}', '2022-07-04 22:00:00', '2022-07-04 22:00:00');
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524953', '33', 'maxResponseBody', 'maxResponseBody', 1, 3, 5, '{"required":"0","defaultValue":524288}', '2022-07-04 22:00:00', '2022-07-04 22:00:00');
 INSERT INTO "public"."plugin_handle" VALUES ('1529403902783524954', '33', 'maxRequestBody', 'maxRequestBody', 1, 3, 6, '{"required":"0","defaultValue":524288}', '2022-07-04 22:00:00', '2022-07-04 22:00:00');

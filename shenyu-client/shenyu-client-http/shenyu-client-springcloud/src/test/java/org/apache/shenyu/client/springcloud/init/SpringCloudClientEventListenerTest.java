@@ -17,11 +17,13 @@
 
 package org.apache.shenyu.client.springcloud.init;
 
+import org.apache.shenyu.client.core.exception.ShenyuClientIllegalArgumentException;
 import org.apache.shenyu.client.core.register.ShenyuClientRegisterRepositoryFactory;
 import org.apache.shenyu.client.springcloud.annotation.ShenyuSpringCloudClient;
 import org.apache.shenyu.register.client.http.utils.RegisterUtils;
 import org.apache.shenyu.register.common.config.PropertiesConfig;
 import org.apache.shenyu.register.common.config.ShenyuRegisterCenterConfig;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -74,20 +76,20 @@ public final class SpringCloudClientEventListenerTest {
     public void beforeEach() {
         when(env.getProperty("spring.application.name")).thenReturn("spring-cloud-test");
     }
-    
+
     private void init() {
         Map<String, Object> results = new LinkedHashMap<>();
         results.put("springCloudClientTestBean", springCloudClientTestBean);
         when(applicationContext.getBeansWithAnnotation(any())).thenReturn(results);
         contextRefreshedEvent = new ContextRefreshedEvent(applicationContext);
     }
-    
+
     @Test
     public void testShenyuBeanProcess() {
         registerUtilsMockedStatic.when(() -> RegisterUtils.doLogin(any(), any(), any())).thenReturn(Optional.of("token"));
         // config with full
-        SpringCloudClientEventListener springCloudClientEventListener = buildSpringCloudClienttEventListener(true);
-        springCloudClientEventListener.onApplicationEvent(contextRefreshedEvent);
+        SpringCloudClientEventListener springCloudClientEventListener = buildSpringCloudClientEventListener(true);
+        springCloudClientEventListener.onApplicationEvent(new ContextRefreshedEvent(applicationContext));
         verify(applicationContext, never()).getBeansWithAnnotation(any());
         registerUtilsMockedStatic.close();
     }
@@ -96,9 +98,9 @@ public final class SpringCloudClientEventListenerTest {
     public void testNormalBeanProcess() {
         init();
         registerUtilsMockedStatic.when(() -> RegisterUtils.doLogin(any(), any(), any())).thenReturn(Optional.of("token"));
-        SpringCloudClientEventListener springCloudClientEventListener = buildSpringCloudClienttEventListener(false);
+        SpringCloudClientEventListener springCloudClientEventListener = buildSpringCloudClientEventListener(false);
         springCloudClientEventListener.onApplicationEvent(contextRefreshedEvent);
-        verify(applicationContext, times(1)).getBeansWithAnnotation(any());
+        verify(applicationContext, times(2)).getBeansWithAnnotation(any());
         registerUtilsMockedStatic.close();
     }
 
@@ -108,16 +110,16 @@ public final class SpringCloudClientEventListenerTest {
         registerUtilsMockedStatic.when(() -> RegisterUtils.doLogin(any(), any(), any())).thenReturn(Optional.of("token"));
         registerUtilsMockedStatic.when(() -> RegisterUtils.doRegister(any(), any(), any()))
                 .thenAnswer((Answer<Void>) invocation -> null);
-        SpringCloudClientEventListener springCloudClientEventListener = buildSpringCloudClienttEventListener(false);
+        SpringCloudClientEventListener springCloudClientEventListener = buildSpringCloudClientEventListener(false);
         springCloudClientEventListener.onApplicationEvent(contextRefreshedEvent);
-        verify(applicationContext, times(1)).getBeansWithAnnotation(any());
+        verify(applicationContext, times(2)).getBeansWithAnnotation(any());
         registerUtilsMockedStatic.close();
     }
 
-    private SpringCloudClientEventListener buildSpringCloudClienttEventListener(final boolean full) {
+    private SpringCloudClientEventListener buildSpringCloudClientEventListener(final boolean full) {
         Properties properties = new Properties();
         properties.setProperty("contextPath", "/test");
-        properties.setProperty("isFull", full + "");
+        properties.setProperty("isFull", String.valueOf(full));
         properties.setProperty("ip", "127.0.0.1");
         properties.setProperty("port", "8081");
         properties.setProperty("username", "admin");
@@ -128,17 +130,27 @@ public final class SpringCloudClientEventListenerTest {
         mockRegisterCenter.setServerLists("http://127.0.0.1:8080");
         mockRegisterCenter.setRegisterType("http");
         mockRegisterCenter.setProps(properties);
+        // hit error
+        when(env.getProperty("spring.application.name")).thenReturn("");
+        Assert.assertThrows(ShenyuClientIllegalArgumentException.class, () -> new SpringCloudClientEventListener(config, ShenyuClientRegisterRepositoryFactory.newInstance(mockRegisterCenter), env));
+        when(env.getProperty("spring.application.name")).thenReturn("spring-cloud-test");
         return new SpringCloudClientEventListener(config, ShenyuClientRegisterRepositoryFactory.newInstance(mockRegisterCenter), env);
     }
 
     @RestController
     @RequestMapping("/order")
-    @ShenyuSpringCloudClient(path = "/order")
     static class SpringCloudClientTestBean {
         @PostMapping("/save")
-        @ShenyuSpringCloudClient(path = "/save")
+        @ShenyuSpringCloudClient(path = "/order/save")
         public String save(@RequestBody final String body) {
-            return "" + body;
+            return body;
+        }
+
+        @PostMapping("/update")
+        @ShenyuSpringCloudClient(path = "")
+        public String update(@RequestBody final String body) {
+            return body;
         }
     }
+
 }

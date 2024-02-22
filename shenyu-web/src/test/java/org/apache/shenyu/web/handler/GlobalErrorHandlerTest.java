@@ -17,9 +17,11 @@
 
 package org.apache.shenyu.web.handler;
 
+import org.apache.shenyu.common.config.ShenyuConfig;
 import org.apache.shenyu.plugin.api.result.DefaultShenyuResult;
 import org.apache.shenyu.plugin.api.result.ShenyuResult;
 import org.apache.shenyu.plugin.api.utils.SpringBeanUtils;
+import org.apache.shenyu.plugin.base.alert.AlarmService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,8 +32,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -74,6 +78,10 @@ public final class GlobalErrorHandlerTest {
         SpringBeanUtils.getInstance().setApplicationContext(context);
         when(context.getBean(ShenyuResult.class)).thenReturn(new DefaultShenyuResult() {
         });
+        when(context.getBean(AlarmService.class)).thenReturn(content -> {
+        });
+        when(context.getBean(ShenyuConfig.class)).thenReturn(new ShenyuConfig() {
+        });
 
         globalErrorHandler = new GlobalErrorHandler();
     }
@@ -85,5 +93,6 @@ public final class GlobalErrorHandlerTest {
         NullPointerException nullPointerException = new NullPointerException("nullPointerException");
         Mono<Void> response = globalErrorHandler.handle(webExchange, nullPointerException);
         assertNotNull(response);
+        assertNotNull(globalErrorHandler.handle(webExchange, new ResponseStatusException(HttpStatus.BAD_REQUEST)));
     }
 }

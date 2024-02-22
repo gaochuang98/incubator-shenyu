@@ -17,6 +17,8 @@
 
 package org.apache.shenyu.examples.springmvc.controller;
 
+import org.apache.shenyu.client.apidocs.annotations.ApiDoc;
+import org.apache.shenyu.client.apidocs.annotations.ApiModule;
 import org.apache.shenyu.client.springmvc.annotation.ShenyuSpringMvcClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,25 +33,28 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/upload")
-@ShenyuSpringMvcClient("/upload/**")
+@ShenyuSpringMvcClient("/upload")
+@ApiModule(value = "upload")
 public class UploadController {
 
     /**
-     * mvc uploadFile
-     * @param file
-     * @return
+     * mvc upload single file.
+     * @param file file.
+     * @return  response
      */
     @PostMapping(value = "/singleFile")
+    @ApiDoc(desc = "singleFile")
     public String singleFile(@RequestParam("file") final MultipartFile file) {
         return file.getOriginalFilename();
     }
 
     /**
-     * mvc uploadFiles
-     * @param files
-     * @return
+     * mvc upload multiple files.
+     * @param files files.
+     * @return  response
      */
     @PostMapping(value = "/files")
+    @ApiDoc(desc = "files")
     public String files(@RequestParam("files") final MultipartFile[] files) {
         return Arrays.stream(files).map(MultipartFile::getOriginalFilename).collect(Collectors.joining(","));
     }
